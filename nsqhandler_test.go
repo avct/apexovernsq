@@ -2,6 +2,7 @@ package nsqhandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/apex/log"
@@ -44,10 +45,11 @@ func TestHandler(t *testing.T) {
 
 	log.SetHandler(New(json.Marshal, fakePublish, "testing"))
 	log.WithField("user", "tealeg").Info("Hello")
+	log.WithError(fmt.Errorf("Test Error")).Error("Oh dear!")
 
 	messageCount := len(messages)
-	if messageCount != 1 {
-		t.Fatalf("Expected 1 message to be logged, but found %d", messageCount)
+	if messageCount != 2 {
+		t.Fatalf("Expected 2 message to be logged, but found %d", messageCount)
 	}
 	message := messages[0]
 	entry := &log.Entry{}
@@ -60,5 +62,22 @@ func TestHandler(t *testing.T) {
 	}
 	if entry.Level != log.InfoLevel {
 		t.Error("Incorrect log level in unmarhalled entry")
+	}
+	user := entry.Fields.Get("user")
+	if user == nil {
+		t.Fatal("Expected value for field 'user', got nil")
+	}
+	if user != "tealeg" {
+		t.Errorf("Expected user=\"tealeg\", got user=%q", user)
+	}
+
+	message = messages[1]
+	err = json.Unmarshal(*message, entry)
+	if err != nil {
+		t.Fatalf("Error unmarshalling log message: %s", err.Error())
+	}
+	errorField := entry.Fields.Get("error")
+	if errorField != "Test Error" {
+		t.Errorf("Expected 'error' field to be \"Test Error\" got %q", errorField)
 	}
 }
