@@ -11,16 +11,20 @@ var start = time.Now()
 
 type PublishFunc func(topic string, body []byte) error
 
+type MarshalFunc func(x interface{}) ([]byte, error)
+
 type Handler struct {
-	mu    sync.Mutex
-	pfunc PublishFunc
-	topic string
+	mu          sync.Mutex
+	marshalFunc MarshalFunc
+	publishFunc PublishFunc
+	topic       string
 }
 
-func New(pfunc PublishFunc, topic string) *Handler {
+func New(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string) *Handler {
 	return &Handler{
-		pfunc: pfunc,
-		topic: topic,
+		marshalFunc: marshalFunc,
+		publishFunc: publishFunc,
+		topic:       topic,
 	}
 }
 
@@ -28,7 +32,11 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.pfunc(h.topic, []byte(e.Message))
+	payload, err := h.marshalFunc(e)
+	if err != nil {
+		return err
+	}
+	h.publishFunc(h.topic, payload)
 
 	return nil
 }
