@@ -2,9 +2,12 @@ package nsqhandler
 
 import (
 	"sync"
+	"time"
 
 	"github.com/apex/log"
 )
+
+var start = time.Now()
 
 type PublishFunc func(topic string, body []byte) error
 
@@ -22,5 +25,10 @@ func New(pfunc PublishFunc, topic string) *Handler {
 }
 
 func (h *Handler) HandleLog(e *log.Entry) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.pfunc(h.topic, []byte(e.Message))
+
 	return nil
 }

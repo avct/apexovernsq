@@ -43,6 +43,6 @@ func TestHandler(t *testing.T) {
 
 	messageCount := len(messages)
 	if messageCount != 1 {
-		t.Fatal("Expected 1 message to be logged, but found %d", messageCount)
+		t.Fatalf("Expected 1 message to be logged, but found %d", messageCount)
 	}
 }
