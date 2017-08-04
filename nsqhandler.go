@@ -1,7 +1,7 @@
 /*
-apex_log_nsq_handler is a handler for github.com/apex/log.  It's intended to act as a transport to allow log.Entry structs to pass through nsq and be reconstructed and passed to another handler on the other side.
+sqhandler is a handler for github.com/apex/log.  It's intended to act as a transport to allow log.Entry structs to pass through nsq and be reconstructed and passed to another handler on the other side.
 */
-package apex_log_nsq_handler
+package nsqhandler
 
 import (
 	"sync"
@@ -27,7 +27,7 @@ type Handler struct {
 	topic       string
 }
 
-// New returns a pointer to an apex_log_nsq_handler.Handler that can
+// New returns a pointer to an nsqhandler.Handler that can
 // in turn be passed to github.com/apex/log.SetHandler.
 //
 // The marshalFunc provided will be used to marshal a
