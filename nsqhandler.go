@@ -36,7 +36,5 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 	if err != nil {
 		return err
 	}
-	h.publishFunc(h.topic, payload)
-
-	return nil
+	return h.publishFunc(h.topic, payload)
 }
