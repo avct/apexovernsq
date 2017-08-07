@@ -101,7 +101,7 @@ func main() {
 	cfg := nsq.NewConfig()
 	producers := makeProducers(nsqdAddresses, cfg)
 	publisher := makePublisher(producers)
-	handler := nsqhandler.New(json.Marshal, publisher, "log")
+	handler := nsqhandler.NewApexLogNSQHandler(json.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
 	alog.WithFields(alog.Fields{
