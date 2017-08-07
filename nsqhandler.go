@@ -22,15 +22,15 @@ type PublishFunc func(topic string, body []byte) error
 // marshal an arbitrary struct to a slice of bytes.
 type MarshalFunc func(x interface{}) ([]byte, error)
 
-// Handler is a handler that can be passed to github.com/apex/log.SetHandler.
-type Handler struct {
+// ApexLogNSQHandler is a handler that can be passed to github.com/apex/log.SetHandler.
+type ApexLogNSQHandler struct {
 	mu          sync.Mutex
 	marshalFunc MarshalFunc
 	publishFunc PublishFunc
 	topic       string
 }
 
-// New returns a pointer to an nsqhandler.Handler that can
+// NewApexLogNSQHandler returns a pointer to an nsqhandler.ApexLogNSQHandler that can
 // in turn be passed to github.com/apex/log.SetHandler.
 //
 // The marshalFunc provided will be used to marshal a
@@ -45,19 +45,19 @@ type Handler struct {
 // The topic is a string determining the nsq topic the messages will
 // be published to.
 //
-func New(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string) *Handler {
-	return &Handler{
+func NewApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string) *ApexLogNSQHandler {
+	return &ApexLogNSQHandler{
 		marshalFunc: marshalFunc,
 		publishFunc: publishFunc,
 		topic:       topic,
 	}
 }
 
-// HandleLog makes Handler fulfil the interface required by
+// HandleLog makes ApexLogNSQHandler fulfil the interface required by
 // github.com/apex/log for handlers.  Each individual log entry made
 // in client programs will eventually invoke this function when using
-// this Handler.
-func (h *Handler) HandleLog(e *log.Entry) error {
+// this ApexLogNSQHandler.
+func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
