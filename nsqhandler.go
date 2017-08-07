@@ -1,5 +1,8 @@
 /*
-sqhandler is a handler for github.com/apex/log.  It's intended to act as a transport to allow log.Entry structs to pass through nsq and be reconstructed and passed to another handler on the other side.
+Package nsqhandler provides a handler for github.com/apex/log.
+It's intended to act as a transport to allow log.Entry structs to pass
+through nsq and be reconstructed and passed to another handler on the
+other side.
 */
 package nsqhandler
 
@@ -9,9 +12,9 @@ import (
 	"github.com/apex/log"
 )
 
-// PublishFunc is a function signature for any function that publish a
-// message on an a provided nsq topic.  Typically this is
-// github.com/nsqio/go-nsq.Producer.Publish, or somethign that wraps
+// PublishFunc is a function signature for any function that publishes
+// a message on a provided nsq topic.  Typically this is
+// github.com/nsqio/go-nsq.Producer.Publish, or something that wraps
 // it.
 type PublishFunc func(topic string, body []byte) error
 
