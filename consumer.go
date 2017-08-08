@@ -1,10 +1,30 @@
 package nsqhandler
 
-import nsq "github.com/nsqio/go-nsq"
+import (
+	alog "github.com/apex/log"
+	nsq "github.com/nsqio/go-nsq"
+)
 
-type ApexLogHandler struct {
+type UnmarshalFunc func(data []byte, v interface{}) error
+
+type NSQApexLogHandler struct {
+	handler       alog.Handler
+	unmarshalFunc UnmarshalFunc
 }
 
-func (alh *ApexLogHandler) HandleMessage(m *nsq.Message) error {
-	return nil
+func NewNSQApexLogHandler(logger *alog.Logger, handler alog.Handler, unmarshalFunc UnmarshalFunc) *NSQApexLogHandler {
+	return &NSQApexLogHandler{
+		logger:        logger,
+		handler:       handler,
+		unmarshalFunc: unmarshalFunc,
+	}
+}
+
+func (alh *NSQApexLogHandler) HandleMessage(m *nsq.Message) error {
+	var entry *alog.Entry
+	entry = alh.logger.WithField("remote", true)
+	if err := alh.unmarshalFunc(m.Body, entry); err != nil {
+		return err
+	}
+	return alh.handler.HandleLog(entry)
 }
