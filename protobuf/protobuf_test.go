@@ -15,6 +15,27 @@ func TestAttemptToMarshalUnsupportedType(t *testing.T) {
 	}
 }
 
+func TestAttemptToUnmarshallToUnsupportedType(t *testing.T) {
+	type foo struct{}
+
+	handler := memory.New()
+	alog.SetHandler(handler)
+	alog.WithField("test", "true").Warn("it's a test")
+	entry := handler.Entries[0]
+	marshalled, err := Marshal(entry)
+	if err != nil {
+		t.Fatalf("Error marshalling: %s", err.Error())
+	}
+
+	err = Unmarshal(marshalled, &foo{})
+	if err == nil {
+		t.Fatal("Expected an error, but nil was returned.")
+	}
+	if err.Error() != "Attempted to unmarshal to a type other than apex.log.Entry" {
+		t.Error("Incorrect error message when attempting to Unmarshal an invalid type.")
+	}
+}
+
 func TestMarshalAndUnmarshalEntry(t *testing.T) {
 	handler := memory.New()
 	alog.SetHandler(handler)
