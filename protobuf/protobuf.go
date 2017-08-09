@@ -31,6 +31,12 @@ func Marshal(x interface{}) ([]byte, error) {
 
 	fields = make(map[string]string, len(logEntry.Fields))
 	for key, value := range logEntry.Fields {
+		// Enforcing the string or fmt.Stringer is a simple
+		// way to ensure we can always push field data over
+		// the line.  If we ever really want to reconstruct
+		// types on the other side of NSQ then we'd probably
+		// be just as well off wrapping gob.Encode and
+		// gob.Decode as Marshal/Unmarshal.
 		if str, ok = value.(string); ok {
 			fields[key] = str
 			continue
