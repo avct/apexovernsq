@@ -9,10 +9,10 @@ import (
 
 // Marshal is an implementation of a MarshalFunc specifically for use
 // with this handler.  Although it accepts an empty interface type, it
-// will only work with an apex.log.Entry type, and will panic if any
-// other type is passed in.  Not that this mechanism also enforces the
-// rule that any fields set must either be strings or satisfy the
-// fmt.Stringer interface.
+// will only work with an apex.log.Entry type, and will return an
+// error if any other type is passed in.  Not that this mechanism also
+// enforces the rule that any fields set must either be strings or
+// satisfy the fmt.Stringer interface.
 func Marshal(x interface{}) ([]byte, error) {
 	var logEntry *alog.Entry
 	var timestamp []byte
