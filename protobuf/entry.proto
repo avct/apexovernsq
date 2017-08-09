@@ -6,5 +6,4 @@ message Entry {
   string Level = 2;
   bytes Timestamp = 3;
   string Message = 4;
-  string Start = 5;
 }
