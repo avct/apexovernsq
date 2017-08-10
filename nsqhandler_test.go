@@ -8,7 +8,7 @@ import (
 	"github.com/apex/log"
 )
 
-func TestNew(t *testing.T) {
+func TestNewApexLogNSQHandler(t *testing.T) {
 	called := false
 	fakePublish := func(topic string, body []byte) error {
 		called = true
@@ -17,9 +17,9 @@ func TestNew(t *testing.T) {
 	fakeMarshal := func(x interface{}) ([]byte, error) {
 		return nil, nil
 	}
-	handler := New(fakeMarshal, fakePublish, "testing")
+	handler := NewApexLogNSQHandler(fakeMarshal, fakePublish, "testing")
 	if handler == nil {
-		t.Fatal("Expected *Handler, got nil")
+		t.Fatal("Expected *ApexLogNSQHandler, got nil")
 	}
 	if handler.publishFunc == nil {
 		t.Fatal("Expected publishFunc to be set, but it was not")
@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestHandler(t *testing.T) {
+func TestApexLogNSQHandler(t *testing.T) {
 	var messages []*[]byte
 	var loggedTopic string
 	fakePublish := func(topic string, body []byte) error {
@@ -43,7 +43,7 @@ func TestHandler(t *testing.T) {
 		return nil
 	}
 
-	log.SetHandler(New(json.Marshal, fakePublish, "testing"))
+	log.SetHandler(NewApexLogNSQHandler(json.Marshal, fakePublish, "testing"))
 	log.WithField("user", "tealeg").Info("Hello")
 	log.WithError(fmt.Errorf("Test Error")).Error("Oh dear!")
 

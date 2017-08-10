@@ -34,26 +34,26 @@ import (
 	"log"
 	"strings"
 
-	"code.avct.io/nsqhandler"
+	"github.com/avct/nsqhandler"
 
 	alog "github.com/apex/log"
 	nsq "github.com/nsqio/go-nsq"
 )
 
-type StringFlags []string
+type stringFlags []string
 
-func (n *StringFlags) Set(value string) error {
+func (n *stringFlags) Set(value string) error {
 	*n = append(*n, value)
 	return nil
 }
 
-func (n *StringFlags) String() string {
+func (n *stringFlags) String() string {
 	return strings.Join(*n, ",")
 }
 
 var (
 	topic         = flag.String("topic", "", "NSQ topic to publish to [Required]")
-	nsqdAddresses = StringFlags{}
+	nsqdAddresses = stringFlags{}
 )
 
 func init() {
@@ -64,7 +64,7 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func makeProducers(addresses StringFlags, cfg *nsq.Config) []*nsq.Producer {
+func makeProducers(addresses stringFlags, cfg *nsq.Config) []*nsq.Producer {
 	var producer *nsq.Producer
 	var err error
 	producerCount := len(addresses)
@@ -101,7 +101,7 @@ func main() {
 	cfg := nsq.NewConfig()
 	producers := makeProducers(nsqdAddresses, cfg)
 	publisher := makePublisher(producers)
-	handler := nsqhandler.New(json.Marshal, publisher, "log")
+	handler := nsqhandler.NewApexLogNSQHandler(json.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
 	alog.WithFields(alog.Fields{
