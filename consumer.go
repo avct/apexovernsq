@@ -8,23 +8,31 @@ import (
 type UnmarshalFunc func(data []byte, v interface{}) error
 
 type NSQApexLogHandler struct {
+	logger        *alog.Logger
 	handler       alog.Handler
 	unmarshalFunc UnmarshalFunc
 }
 
-func NewNSQApexLogHandler(logger *alog.Logger, handler alog.Handler, unmarshalFunc UnmarshalFunc) *NSQApexLogHandler {
-	return &NSQApexLogHandler{
-		logger:        logger,
-		handler:       handler,
-		unmarshalFunc: unmarshalFunc,
+func NewNSQApexLogHandler(handler alog.Handler, unmarshalFunc UnmarshalFunc) *NSQApexLogHandler {
+	if logger, ok := alog.Log.(*alog.Logger); ok {
+		return &NSQApexLogHandler{
+			logger:        logger,
+			handler:       handler,
+			unmarshalFunc: unmarshalFunc,
+		}
 	}
+	panic("alog.Log is not an *alog.Logger")
 }
 
 func (alh *NSQApexLogHandler) HandleMessage(m *nsq.Message) error {
-	var entry *alog.Entry
-	entry = alh.logger.WithField("remote", true)
+	entry := alog.NewEntry(alh.logger)
 	if err := alh.unmarshalFunc(m.Body, entry); err != nil {
 		return err
 	}
+
+	if entry.Level < alh.logger.Level {
+		return nil
+	}
+
 	return alh.handler.HandleLog(entry)
 }
