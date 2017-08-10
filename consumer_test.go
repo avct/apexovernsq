@@ -51,6 +51,9 @@ func TestHandleMessage(t *testing.T) {
 		t.Errorf("Expected %d fields, but got %d fields", expectedFieldCount, actualFieldCount)
 	}
 	for fieldName, value := range sourceEntry.Fields {
-
+		recieved := entry.Fields.Get(fieldName)
+		if recieved != value {
+			t.Errorf("Expected %s=%q, got %s=%q", fieldName, value, fieldName, recieved)
+		}
 	}
 }
