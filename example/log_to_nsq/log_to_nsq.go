@@ -40,20 +40,20 @@ import (
 	nsq "github.com/nsqio/go-nsq"
 )
 
-type StringFlags []string
+type stringFlags []string
 
-func (n *StringFlags) Set(value string) error {
+func (n *stringFlags) Set(value string) error {
 	*n = append(*n, value)
 	return nil
 }
 
-func (n *StringFlags) String() string {
+func (n *stringFlags) String() string {
 	return strings.Join(*n, ",")
 }
 
 var (
 	topic         = flag.String("topic", "", "NSQ topic to publish to [Required]")
-	nsqdAddresses = StringFlags{}
+	nsqdAddresses = stringFlags{}
 )
 
 func init() {
@@ -64,7 +64,7 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func makeProducers(addresses StringFlags, cfg *nsq.Config) []*nsq.Producer {
+func makeProducers(addresses stringFlags, cfg *nsq.Config) []*nsq.Producer {
 	var producer *nsq.Producer
 	var err error
 	producerCount := len(addresses)
