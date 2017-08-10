@@ -34,7 +34,7 @@ import (
 	"log"
 	"strings"
 
-	"code.avct.io/nsqhandler"
+	"github.com/avct/nsqhandler"
 
 	alog "github.com/apex/log"
 	nsq "github.com/nsqio/go-nsq"
