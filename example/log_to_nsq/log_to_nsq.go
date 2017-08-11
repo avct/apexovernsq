@@ -1,5 +1,5 @@
 /*
-log_to_nsq is an example program that demonstrates the use of the apexovernsq.  When invoked with the IP adress and port of one or more running nsqd and a topic name, it will pu
+log_to_nsq is an example program that demonstrates the use of apexovernsq.  When invoked with the IP adress and port of one or more running nsqd and a topic name, it will pu
 sh two structured log messages to that nsq daemon (or deamons) and then exit.
 
 To see this working the following three things should be invoked.
