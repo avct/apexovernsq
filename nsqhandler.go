@@ -1,10 +1,10 @@
 /*
-Package nsqhandler provides a handler for github.com/apex/log.
+Package apexovernsq provides a handler for github.com/apex/log.
 It's intended to act as a transport to allow log.Entry structs to pass
 through nsq and be reconstructed and passed to another handler on the
 other side.
 */
-package nsqhandler
+package apexovernsq
 
 import (
 	"sync"
@@ -30,7 +30,7 @@ type ApexLogNSQHandler struct {
 	topic       string
 }
 
-// NewApexLogNSQHandler returns a pointer to an nsqhandler.ApexLogNSQHandler that can
+// NewApexLogNSQHandler returns a pointer to an apexovernsq.ApexLogNSQHandler that can
 // in turn be passed to github.com/apex/log.SetHandler.
 //
 // The marshalFunc provided will be used to marshal a
