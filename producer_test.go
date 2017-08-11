@@ -1,4 +1,4 @@
-package nsqhandler
+package apexovernsq
 
 import (
 	"encoding/json"

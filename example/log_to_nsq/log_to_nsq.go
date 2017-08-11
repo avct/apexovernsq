@@ -1,5 +1,5 @@
 /*
-log_to_nsq is an example program that demonstrates the use of the nsqhandler.  When invoked with the IP adress and port of one or more running nsqd and a topic name, it will pu
+log_to_nsq is an example program that demonstrates the use of apexovernsq.  When invoked with the IP adress and port of one or more running nsqd and a topic name, it will pu
 sh two structured log messages to that nsq daemon (or deamons) and then exit.
 
 To see this working the following three things should be invoked.
@@ -34,7 +34,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/avct/nsqhandler"
+	"github.com/avct/apexovernsq"
 
 	alog "github.com/apex/log"
 	nsq "github.com/nsqio/go-nsq"
@@ -79,7 +79,7 @@ func makeProducers(addresses stringFlags, cfg *nsq.Config) []*nsq.Producer {
 	return producers
 }
 
-func makePublisher(producers []*nsq.Producer) nsqhandler.PublishFunc {
+func makePublisher(producers []*nsq.Producer) apexovernsq.PublishFunc {
 	return func(topic string, body []byte) (err error) {
 		for _, producer := range producers {
 			err = producer.Publish(topic, body)
@@ -101,7 +101,7 @@ func main() {
 	cfg := nsq.NewConfig()
 	producers := makeProducers(nsqdAddresses, cfg)
 	publisher := makePublisher(producers)
-	handler := nsqhandler.NewApexLogNSQHandler(json.Marshal, publisher, "log")
+	handler := apexovernsq.NewApexLogNSQHandler(json.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
 	alog.WithFields(alog.Fields{
