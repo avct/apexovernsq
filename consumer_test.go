@@ -1,9 +1,9 @@
-package nsqhandler
+package apexovernsq
 
 import (
 	"testing"
 
-	"github.com/avct/nsqhandler/protobuf"
+	"github.com/avct/apexovernsq/protobuf"
 
 	alog "github.com/apex/log"
 	"github.com/apex/log/handlers/memory"

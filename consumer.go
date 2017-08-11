@@ -1,4 +1,4 @@
-package nsqhandler
+package apexovernsq
 
 import (
 	alog "github.com/apex/log"
@@ -29,7 +29,7 @@ type NSQApexLogHandler struct {
 // should match the marshal function used to publish the Message on
 // the NSQ channel.  If you don't have any special requirement using
 // the Marshal and Unmarshal functions from
-// github.com/avct/nsqhandler/protobuf should work well.
+// github.com/avct/apexovernsq/protobuf should work well.
 //
 // When the handler is invoked to consume a message, the provided
 // github.com/apex/log.Handler will have it's HandleLog method called
