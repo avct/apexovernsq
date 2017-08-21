@@ -28,13 +28,13 @@ This program should exit almost immediately, but if you check the nsq_tail proce
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/avct/apexovernsq"
+	"github.com/avct/apexovernsq/protobuf"
 
 	alog "github.com/apex/log"
 	nsq "github.com/nsqio/go-nsq"
@@ -101,7 +101,7 @@ func main() {
 	cfg := nsq.NewConfig()
 	producers := makeProducers(nsqdAddresses, cfg)
 	publisher := makePublisher(producers)
-	handler := apexovernsq.NewApexLogNSQHandler(json.Marshal, publisher, "log")
+	handler := apexovernsq.NewApexLogNSQHandler(protobuf.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
 	alog.WithFields(alog.Fields{
