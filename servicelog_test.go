@@ -42,4 +42,10 @@ func TestNewServiceLogContext(t *testing.T) {
 	if pid != expectedPid {
 		t.Errorf("Expected %d, got %d", expectedPid, pid)
 	}
+
+	hostname := entry.Fields.Get("hostname")
+	expectedHostname, _ := os.Hostname()
+	if hostname != expectedHostname {
+		t.Errorf("Expected %q, got %q", expectedHostname, hostname)
+	}
 }
