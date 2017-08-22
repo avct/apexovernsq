@@ -104,9 +104,10 @@ func main() {
 	handler := apexovernsq.NewApexLogNSQHandler(protobuf.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
-	alog.WithFields(alog.Fields{
+	ctx := apexovernsq.NewServiceLogContext()
+	ctx.WithFields(alog.Fields{
 		"flavour": "pistachio",
 		"scoops":  "two",
 	}).Info("It's ice cream time!")
-	alog.WithError(fmt.Errorf("ouch, brainfreeze")).Error("Problem consuming ice cream")
+	ctx.WithError(fmt.Errorf("ouch, brainfreeze")).Error("Problem consuming ice cream")
 }
