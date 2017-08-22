@@ -1,6 +1,8 @@
-package main
+/*
+nsq-log-tail is a program that will monitor a topic on one or more nsqd instances and attempt to convert messages on that topic into human readable log output.
+*/
 
-// T
+package main
 
 import (
 	"flag"
