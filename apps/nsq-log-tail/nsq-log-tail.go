@@ -20,7 +20,7 @@ import (
 
 	alog "github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
-	"github.com/apex/log/handlers/text"
+	"github.com/apex/log/handlers/logfmt"
 	nsq "github.com/nsqio/go-nsq"
 )
 
@@ -83,7 +83,7 @@ func logFromNSQ() error {
 	if err != nil {
 		return err
 	}
-	handler = text.Default
+	handler = logfmt.Default
 	if *useCLIHandler {
 		handler = cli.Default
 	}
