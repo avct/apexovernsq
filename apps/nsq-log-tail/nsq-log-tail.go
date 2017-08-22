@@ -35,28 +35,16 @@ func (n *stringFlags) String() string {
 	return strings.Join(*n, ",")
 }
 
-var (
-	topic            = flag.String("topic", "", "NSQ topic to consume from [Required]")
-	useCLIHandler    = flag.Bool("cli", false, "Use CLI output handler")
-	nsqdTCPAddrs     = stringFlags{}
-	lookupdHTTPAddrs = stringFlags{}
-)
-
-func init() {
-	flag.Var(&nsqdTCPAddrs, "nsqd-tcp-address", "nsqd TCP address (may be given multiple times)")
-	flag.Var(&lookupdHTTPAddrs, "lookupd-http-address", "lookupd HTTP address (may be given multiple times)")
-}
-
-func listenToNSQ(consumer *nsq.Consumer) error {
+func listenToNSQ(consumer *nsq.Consumer, p *parameters) error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	err := consumer.ConnectToNSQDs(nsqdTCPAddrs)
+	err := consumer.ConnectToNSQDs(p.nsqdTCPAddrs)
 	if err != nil {
 		return err
 	}
 
-	err = consumer.ConnectToNSQLookupds(lookupdHTTPAddrs)
+	err = consumer.ConnectToNSQLookupds(p.lookupdHTTPAddrs)
 	if err != nil {
 		return err
 	}
@@ -75,43 +63,64 @@ func generateEphemeralChannelName() string {
 	return fmt.Sprintf("tail%06d#ephemeral", rand.Int()%999999)
 }
 
-func logFromNSQ() error {
+func logFromNSQ(p *parameters) error {
 	var handler alog.Handler
 	cfg := nsq.NewConfig()
 	channel := generateEphemeralChannelName()
-	consumer, err := nsq.NewConsumer(*topic, channel, cfg)
+	consumer, err := nsq.NewConsumer(*p.topic, channel, cfg)
 	if err != nil {
 		return err
 	}
 	handler = logfmt.Default
-	if *useCLIHandler {
+	if *p.useCLIHandler {
 		handler = cli.Default
 	}
 	consumer.AddHandler(apexovernsq.NewNSQApexLogHandler(handler, protobuf.Unmarshal))
 
-	return listenToNSQ(consumer)
+	return listenToNSQ(consumer, p)
 }
 
-func checkParamters() error {
-	if *topic == "" {
-		return fmt.Errorf("--topic is required")
+type parameters struct {
+	topic            *string
+	useCLIHandler    *bool
+	nsqdTCPAddrs     stringFlags
+	lookupdHTTPAddrs stringFlags
+}
+
+func newParameters() *parameters {
+	p := &parameters{
+		topic:            flag.String("topic", "", "NSQ topic to consume from [Required]"),
+		useCLIHandler:    flag.Bool("cli", false, "Use CLI output handler"),
+		nsqdTCPAddrs:     stringFlags{},
+		lookupdHTTPAddrs: stringFlags{},
+	}
+	flag.Var(&p.nsqdTCPAddrs, "nsqd-tcp-address", "nsqd TCP address (may be given multiple times)")
+	flag.Var(&p.lookupdHTTPAddrs, "lookupd-http-address", "lookupd HTTP address (may be given multiple times)")
+	return p
+}
+
+func (p *parameters) check() error {
+	if *p.topic == "" {
+		return fmt.Errorf("Please provide a topic")
 	}
 
-	if len(nsqdTCPAddrs) == 0 && len(lookupdHTTPAddrs) == 0 {
+	if len(p.nsqdTCPAddrs) == 0 && len(p.lookupdHTTPAddrs) == 0 {
 		return fmt.Errorf("--nsqd-tcp-address or --lookupd-http-address required")
 	}
-	if len(nsqdTCPAddrs) > 0 && len(lookupdHTTPAddrs) > 0 {
+	if len(p.nsqdTCPAddrs) > 0 && len(p.lookupdHTTPAddrs) > 0 {
 		return fmt.Errorf("use --nsqd-tcp-address or --lookupd-http-address not both")
 	}
 	return nil
 }
 
 func main() {
+	p := newParameters()
 	flag.Parse()
-	if err := checkParamters(); err != nil {
+	if err := p.check(); err != nil {
+		flag.PrintDefaults()
 		log.Fatal(err)
 	}
-	err := logFromNSQ()
+	err := logFromNSQ(p)
 	if err != nil {
 		log.Fatal(err)
 	}
