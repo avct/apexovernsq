@@ -18,7 +18,9 @@ import (
 	"github.com/avct/apexovernsq"
 	"github.com/avct/apexovernsq/protobuf"
 
-	"github.com/apex/log/handlers/text"
+	alog "github.com/apex/log"
+	"github.com/apex/log/handlers/cli"
+	"github.com/apex/log/handlers/logfmt"
 	nsq "github.com/nsqio/go-nsq"
 )
 
@@ -35,6 +37,7 @@ func (n *stringFlags) String() string {
 
 var (
 	topic            = flag.String("topic", "", "NSQ topic to consume from [Required]")
+	useCLIHandler    = flag.Bool("cli", false, "Use CLI output handler")
 	nsqdTCPAddrs     = stringFlags{}
 	lookupdHTTPAddrs = stringFlags{}
 )
@@ -73,14 +76,18 @@ func generateEphemeralChannelName() string {
 }
 
 func logFromNSQ() error {
+	var handler alog.Handler
 	cfg := nsq.NewConfig()
 	channel := generateEphemeralChannelName()
 	consumer, err := nsq.NewConsumer(*topic, channel, cfg)
 	if err != nil {
 		return err
 	}
-
-	consumer.AddHandler(apexovernsq.NewNSQApexLogHandler(text.Default, protobuf.Unmarshal))
+	handler = logfmt.Default
+	if *useCLIHandler {
+		handler = cli.Default
+	}
+	consumer.AddHandler(apexovernsq.NewNSQApexLogHandler(handler, protobuf.Unmarshal))
 
 	return listenToNSQ(consumer)
 }
