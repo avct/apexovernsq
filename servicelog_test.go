@@ -1,6 +1,7 @@
 package apexovernsq
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -38,9 +39,9 @@ func TestNewServiceLogContext(t *testing.T) {
 	}
 
 	pid := entry.Fields.Get("pid")
-	expectedPid := os.Getpid()
+	expectedPid := fmt.Sprintf("%d", os.Getpid())
 	if pid != expectedPid {
-		t.Errorf("Expected %d, got %d", expectedPid, pid)
+		t.Errorf("Expected %s, got %s", expectedPid, pid)
 	}
 
 	hostname := entry.Fields.Get("hostname")

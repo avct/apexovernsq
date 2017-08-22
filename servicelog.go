@@ -1,6 +1,7 @@
 package apexovernsq
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -22,6 +23,6 @@ func NewServiceLogContext() *log.Entry {
 		log.Fields{
 			"service":  processName(),
 			"hostname": hostname,
-			"pid":      os.Getpid(),
+			"pid":      fmt.Sprintf("%d", os.Getpid()),
 		})
 }
