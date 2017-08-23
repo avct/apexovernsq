@@ -83,6 +83,7 @@ func logFromNSQ(p *parameters) error {
 type parameters struct {
 	topic            *string
 	useCLIHandler    *bool
+	services         stringFlags
 	nsqdTCPAddrs     stringFlags
 	lookupdHTTPAddrs stringFlags
 }
@@ -91,11 +92,14 @@ func newParameters() *parameters {
 	p := &parameters{
 		topic:            flag.String("topic", "", "NSQ topic to consume from [Required]"),
 		useCLIHandler:    flag.Bool("cli", false, "Use CLI output handler"),
+		services:         stringFlags{},
 		nsqdTCPAddrs:     stringFlags{},
 		lookupdHTTPAddrs: stringFlags{},
 	}
 	flag.Var(&p.nsqdTCPAddrs, "nsqd-tcp-address", "nsqd TCP address (may be given multiple times)")
 	flag.Var(&p.lookupdHTTPAddrs, "lookupd-http-address", "lookupd HTTP address (may be given multiple times)")
+	flag.Var(&p.services, "service", "service to output logs for (may be given multiple times). If no service flag is specified, logs for all services will be output")
+
 	return p
 }
 
