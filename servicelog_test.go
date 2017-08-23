@@ -21,7 +21,7 @@ func TestProcessName(t *testing.T) {
 func TestNewServiceLogContext(t *testing.T) {
 	handler := memory.New()
 	log.SetHandler(handler)
-	ctx := NewServiceLogContext()
+	ctx := NewApexLogServiceContext()
 	ctx.Info("Hello")
 
 	entry := handler.Entries[0]
@@ -48,5 +48,17 @@ func TestNewServiceLogContext(t *testing.T) {
 	expectedHostname, _ := os.Hostname()
 	if hostname != expectedHostname {
 		t.Errorf("Expected %q, got %q", expectedHostname, hostname)
+	}
+}
+
+// The ServiceFilterApexLogHandler will let all entries through when the filter is nil.
+func TestServiceFilterApexLogHandlerNoFilter(t *testing.T) {
+	mem := memory.New()
+	handler := NewApexLogServiceFilterHandler(mem, nil)
+	log.SetHandler(handler)
+	log.WithFields(log.Fields{"service": "test"}).Info("Test")
+	resultCount := len(mem.Entries)
+	if resultCount != 1 {
+		t.Errorf("Expected %d entries, got %d", 1, resultCount)
 	}
 }
