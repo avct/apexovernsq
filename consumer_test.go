@@ -155,9 +155,9 @@ func TestFilterMessagesByService(t *testing.T) {
 			t.Errorf("Expected %d entries from test case %d but got nil. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", testCase.resultEntryCount, caseNum, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
 			continue
 		}
-		resultEntryCount = len(entries)
-		if len(entries) != testCase.resultEntryCount {
-			t.Errorf("Expected %d entries from test case %d but got %d. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", testCase.resultEntryCount, caseNum, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
+		resultEntryCount = len(*entries)
+		if resultEntryCount != testCase.resultEntryCount {
+			t.Errorf("Expected %d entries from test case %d but got %d. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", testCase.resultEntryCount, resultEntryCount, caseNum, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
 			continue
 		}
 	}
