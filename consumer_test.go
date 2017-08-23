@@ -88,7 +88,7 @@ func simulateEntry(logger alog.Interface, fields alog.Fielder, msg string) *alog
 func simulateEntries(ctx alog.Interface, count int, offset *int, store *entryList) {
 	var m int
 	for m = 0; m < count; m++ {
-		entry := simulateEntry(ctx, nil, fmt.Sprintf("%d", offset))
+		entry := simulateEntry(ctx, nil, fmt.Sprintf("%d", *offset))
 		(*store)[*offset] = entry
 		*offset++
 	}
@@ -136,15 +136,22 @@ func TestFilterMessagesByService(t *testing.T) {
 	var sourceEntries entryList
 	var totalMessages int
 
+	var thisProcessFilter = &[]string{processName()}
+	var otherProcessFilter = &[]string{"other"}
+	var unknownProcessFilter = &[]string{"unknown"}
+
 	var caseTable = []struct {
 		serviceMessages      int
-		nonServiceMessages   int
 		otherServiceMessages int
+		nonServiceMessages   int
 		resultEntryCount     int
 		filter               *[]string
+		messages             []string
 	}{
-		{1, 1, 1, 3, nil},                      // Default case, no filtering
-		{1, 1, 1, 1, &[]string{processName()}}, // Whitelist service messages
+		{1, 1, 1, 3, nil, []string{"0", "1", "2"}},      // Default case, no filtering
+		{1, 1, 1, 1, thisProcessFilter, []string{"0"}},  // Whitelist service messages
+		{1, 1, 1, 1, otherProcessFilter, []string{"1"}}, // Whitelist other service messages
+		{1, 1, 1, 0, unknownProcessFilter, []string{}},  // Whitelist service that isn't present
 
 	}
 
@@ -176,6 +183,13 @@ func TestFilterMessagesByService(t *testing.T) {
 		if resultEntryCount != testCase.resultEntryCount {
 			t.Errorf("[Case %d] Expected %d entries, but got %d. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", caseNum+1, testCase.resultEntryCount, resultEntryCount, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
 			continue
+		}
+
+		for idx, entry := range *entries {
+			testMessage := testCase.messages[idx]
+			if entry.Message != testMessage {
+				t.Errorf("[Case %d] Expected Entry[%d] to have message %q, but got %q", caseNum, idx, testMessage, entry.Message)
+			}
 		}
 	}
 }
