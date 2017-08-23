@@ -48,7 +48,7 @@ func NewApexLogServiceFilterHandler(handler log.Handler, filter *[]string) *Serv
 }
 
 func (h *ServiceFilterApexLogHandler) shouldLog(e *log.Entry, serviceName string) bool {
-	if h.filter == nil || serviceName == "" {
+	if h.filter == nil || len(*h.filter) == 0 || serviceName == "" {
 		return true
 	}
 	index := sort.SearchStrings(*h.filter, serviceName)
