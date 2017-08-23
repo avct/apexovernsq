@@ -18,6 +18,7 @@ type entryList []*alog.Entry
 // will use the Apex Log memory handler to return the Apex Log Entry
 // that would be logged.
 func simulateMessageFromNSQ(sourceEntry *alog.Entry, filter *[]string) (*alog.Entry, error) {
+	var handler *NSQApexLogHandler
 	marshalledEntry, err := protobuf.Marshal(sourceEntry)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't marshal log entry: %s", err.Error())
@@ -26,7 +27,12 @@ func simulateMessageFromNSQ(sourceEntry *alog.Entry, filter *[]string) (*alog.En
 	msg := nsq.NewMessage(nsq.MessageID{'a', 'b', 'c'}, []byte(marshalledEntry))
 
 	innerHandler := memory.New()
-	handler := NewNSQApexLogHandler(innerHandler, protobuf.Unmarshal, filter)
+	if filter == nil {
+		handler = NewNSQApexLogHandler(innerHandler, protobuf.Unmarshal)
+	} else {
+		filterHandler := NewApexLogServiceFilterHandler(innerHandler, filter)
+		handler = NewNSQApexLogHandler(filterHandler, protobuf.Unmarshal)
+	}
 
 	handler.HandleMessage(msg)
 	return innerHandler.Entries[0], nil
@@ -37,9 +43,16 @@ func simulateMessagesFromNSQ(sourceEntries *entryList, filter *[]string) (*entry
 	var marshalledEntry []byte
 	var err error
 	var msg *nsq.Message
+	var handler nsq.Handler
 
 	innerHandler := memory.New()
-	handler := NewNSQApexLogHandler(innerHandler, protobuf.Unmarshal, filter)
+	if filter == nil {
+		handler = NewNSQApexLogHandler(innerHandler, protobuf.Unmarshal)
+	} else {
+		filterHandler := NewApexLogServiceFilterHandler(innerHandler, filter)
+		handler = NewNSQApexLogHandler(filterHandler, protobuf.Unmarshal)
+	}
+
 	for _, sourceEntry := range *sourceEntries {
 		marshalledEntry, err = protobuf.Marshal(sourceEntry)
 		if err != nil {
@@ -129,7 +142,11 @@ func TestFilterMessagesByService(t *testing.T) {
 		otherServiceMessages int
 		resultEntryCount     int
 		filter               *[]string
-	}{{1, 1, 1, 3, nil}} // Default case, no filtering
+	}{
+		{1, 1, 1, 3, nil},                      // Default case, no filtering
+		{1, 1, 1, 1, &[]string{processName()}}, // Whitelist service messages
+
+	}
 
 	for caseNum, testCase := range caseTable {
 		totalMessages = testCase.serviceMessages + testCase.nonServiceMessages + testCase.otherServiceMessages
@@ -137,7 +154,7 @@ func TestFilterMessagesByService(t *testing.T) {
 		sourceEntries = make([]*alog.Entry, totalMessages)
 
 		// Generate service messages
-		ctx = NewServiceLogContext()
+		ctx = NewApexLogServiceContext()
 		simulateEntries(ctx, testCase.serviceMessages, &generatedMessages, &sourceEntries)
 		// Generate other service messages
 		ctx = ctx.WithFields(alog.Fields{"service": "other"})
@@ -157,7 +174,7 @@ func TestFilterMessagesByService(t *testing.T) {
 		}
 		resultEntryCount = len(*entries)
 		if resultEntryCount != testCase.resultEntryCount {
-			t.Errorf("Expected %d entries from test case %d but got %d. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", testCase.resultEntryCount, resultEntryCount, caseNum, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
+			t.Errorf("[Case %d] Expected %d entries, but got %d. Message counts: service %d, other-service %d, non-service %d.  Filter: %+v.", caseNum+1, testCase.resultEntryCount, resultEntryCount, testCase.serviceMessages, testCase.otherServiceMessages, testCase.nonServiceMessages, testCase.filter)
 			continue
 		}
 	}
