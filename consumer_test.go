@@ -139,6 +139,7 @@ func TestFilterMessagesByService(t *testing.T) {
 	var thisProcessFilter = &[]string{processName()}
 	var otherProcessFilter = &[]string{"other"}
 	var unknownProcessFilter = &[]string{"unknown"}
+	var multiServiceFilter = &[]string{processName(), "other"}
 
 	var caseTable = []struct {
 		serviceMessages      int
@@ -148,10 +149,11 @@ func TestFilterMessagesByService(t *testing.T) {
 		filter               *[]string
 		messages             []string
 	}{
-		{1, 1, 1, 3, nil, []string{"0", "1", "2"}},      // Default case, no filtering
-		{1, 1, 1, 1, thisProcessFilter, []string{"0"}},  // Whitelist service messages
-		{1, 1, 1, 1, otherProcessFilter, []string{"1"}}, // Whitelist other service messages
-		{1, 1, 1, 0, unknownProcessFilter, []string{}},  // Whitelist service that isn't present
+		{1, 1, 1, 3, nil, []string{"0", "1", "2"}},           // Default case, no filtering
+		{1, 1, 1, 1, thisProcessFilter, []string{"0"}},       // Whitelist service messages
+		{1, 1, 1, 1, otherProcessFilter, []string{"1"}},      // Whitelist other service messages
+		{1, 1, 1, 0, unknownProcessFilter, []string{}},       // Whitelist service that isn't present
+		{1, 1, 1, 2, multiServiceFilter, []string{"0", "1"}}, // Whitelist both this service and "other" service
 
 	}
 
