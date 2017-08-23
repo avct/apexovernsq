@@ -18,7 +18,6 @@ type NSQApexLogHandler struct {
 	logger        *alog.Logger
 	handler       alog.Handler
 	unmarshalFunc UnmarshalFunc
-	filter        *[]string
 }
 
 // NewNSQApexLogHandler creates a new NSQApexLogHandler with a
@@ -36,13 +35,12 @@ type NSQApexLogHandler struct {
 // github.com/apex/log.Handler will have it's HandleLog method called
 // with the unmarshalled github.com/apex/log.Entry just as it would if
 // you made a logging call locally.
-func NewNSQApexLogHandler(handler alog.Handler, unmarshalFunc UnmarshalFunc, filter *[]string) *NSQApexLogHandler {
+func NewNSQApexLogHandler(handler alog.Handler, unmarshalFunc UnmarshalFunc) *NSQApexLogHandler {
 	if logger, ok := alog.Log.(*alog.Logger); ok {
 		return &NSQApexLogHandler{
 			logger:        logger,
 			handler:       handler,
 			unmarshalFunc: unmarshalFunc,
-			filter:        filter,
 		}
 	}
 	panic("alog.Log is not an *alog.Logger")
