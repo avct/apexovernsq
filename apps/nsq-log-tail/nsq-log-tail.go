@@ -65,17 +65,26 @@ func generateEphemeralChannelName() string {
 
 func logFromNSQ(p *parameters) error {
 	var handler alog.Handler
+	var logHandler nsq.Handler
+
 	cfg := nsq.NewConfig()
 	channel := generateEphemeralChannelName()
 	consumer, err := nsq.NewConsumer(*p.topic, channel, cfg)
 	if err != nil {
 		return err
 	}
-	handler = logfmt.Default
+	handler = logfmt.New(os.Stdout)
 	if *p.useCLIHandler {
-		handler = cli.Default
+		handler = cli.New(os.Stdout)
 	}
-	consumer.AddHandler(apexovernsq.NewNSQApexLogHandler(handler, protobuf.Unmarshal))
+	if p.services != nil {
+		strings := []string(p.services)
+		serviceFilter := apexovernsq.NewApexLogServiceFilterHandler(handler, &strings)
+		logHandler = apexovernsq.NewNSQApexLogHandler(serviceFilter, protobuf.Unmarshal)
+	} else {
+		logHandler = apexovernsq.NewNSQApexLogHandler(handler, protobuf.Unmarshal)
+	}
+	consumer.AddHandler(logHandler)
 
 	return listenToNSQ(consumer, p)
 }
