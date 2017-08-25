@@ -5,6 +5,7 @@ nsq-log-tail is a program that will monitor a topic on one or more nsqd instance
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -114,14 +115,14 @@ func newParameters() *parameters {
 
 func (p *parameters) check() error {
 	if *p.topic == "" {
-		return fmt.Errorf("Please provide a topic")
+		return errors.New("Please provide a topic")
 	}
 
 	if len(p.nsqdTCPAddrs) == 0 && len(p.lookupdHTTPAddrs) == 0 {
-		return fmt.Errorf("--nsqd-tcp-address or --lookupd-http-address required")
+		return errors.New("--nsqd-tcp-address or --lookupd-http-address required")
 	}
 	if len(p.nsqdTCPAddrs) > 0 && len(p.lookupdHTTPAddrs) > 0 {
-		return fmt.Errorf("use --nsqd-tcp-address or --lookupd-http-address not both")
+		return errors.New("use --nsqd-tcp-address or --lookupd-http-address not both")
 	}
 	return nil
 }
