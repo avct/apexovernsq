@@ -104,7 +104,7 @@ func main() {
 	handler := apexovernsq.NewApexLogNSQHandler(protobuf.Marshal, publisher, "log")
 
 	alog.SetHandler(handler)
-	ctx := apexovernsq.NewServiceLogContext()
+	ctx := apexovernsq.NewApexLogServiceContext()
 	ctx.WithFields(alog.Fields{
 		"flavour": "pistachio",
 		"scoops":  "two",
