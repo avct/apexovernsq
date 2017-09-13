@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/logfmt"
 	"github.com/apex/log/handlers/memory"
 )
 
@@ -49,6 +50,20 @@ func TestNewServiceLogContext(t *testing.T) {
 	if hostname != expectedHostname {
 		t.Errorf("Expected %q, got %q", expectedHostname, hostname)
 	}
+}
+
+// If we create a new service log context from an existing context,
+// we'll use it's Logger not the default one.
+func TestNewServiceLogContextWithHandler(t *testing.T) {
+	mem := memory.New()
+	lf := logfmt.New(os.Stdout)
+	log.SetHandler(lf)
+	ctx2 := NewApexLogServiceContextWithHandler(mem)
+	_, ok := ctx2.Logger.Handler.(*logfmt.Handler)
+	if ok {
+		t.Fatal("got logfmt handler expected memory handler")
+	}
+
 }
 
 // The ServiceFilterApexLogHandler will let all entries through when the filter is nil.
