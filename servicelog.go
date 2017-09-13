@@ -15,19 +15,33 @@ func processName() string {
 	return path.Base(os.Args[0])
 }
 
-func NewApexLogServiceContext() *log.Entry {
-
+func appendServiceFieldsToEntry(entry *log.Entry) *log.Entry {
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.WithError(err).Warn("Unable to get hostname for service logging")
 	}
-
-	return log.WithFields(
+	return entry.WithFields(
 		log.Fields{
 			"service":  processName(),
 			"hostname": hostname,
 			"pid":      fmt.Sprintf("%d", os.Getpid()),
 		})
+
+}
+
+// Create a new logging context with service information.
+func NewApexLogServiceContext() *log.Entry {
+	logger, _ := log.Log.(*log.Logger)
+	entry := log.NewEntry(logger)
+	return appendServiceFieldsToEntry(entry)
+}
+
+// Create a new logging context, with a handler that isn't the default handler and with service information appended.
+func NewApexLogServiceContextWithHandler(handler log.Handler) *log.Entry {
+	logger, _ := log.Log.(*log.Logger)
+	entry := log.NewEntry(logger)
+	entry.Logger.Handler = handler
+	return appendServiceFieldsToEntry(entry)
 }
 
 type ServiceFilterApexLogHandler struct {
