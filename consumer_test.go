@@ -111,7 +111,7 @@ func TestHandleMessage(t *testing.T) {
 	if entry.Level != sourceEntry.Level {
 		t.Errorf("Expected %s, got %s", sourceEntry.Level, entry.Level)
 	}
-	if entry.Timestamp != sourceEntry.Timestamp {
+	if !entry.Timestamp.Equal(sourceEntry.Timestamp) {
 		t.Errorf("Expected %q, got %q", sourceEntry.Timestamp, entry.Timestamp)
 	}
 	expectedFieldCount := len(sourceEntry.Fields)
