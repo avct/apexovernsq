@@ -5,13 +5,13 @@ The apexovernsq package provides a mechanism to transfer structured log entries,
 
 ## Putting log messages onto the NSQ channel
 
-To push log messages onto an NSQ channel we provide a type that implements the `github.com/apex/log.Handler` interface.  In order to create a new `ApexLogNSQHandler` instance you'll need to call `apexovernsq.NewApexLogNSQHandler` and pass it three things:
+To push log messages onto an NSQ channel we provide a type that implements the `github.com/apex/log.Handler` interface.  In order to create a new `ApexLogNSQHandler` instance, you'll need to call `apexovernsq.NewApexLogNSQHandler` and pass it three things:
 
    * A function with a signature matching `apexovernsq.MarshalFunc` to convert an apex `log.Entry` into a slice of bytes.
    * A function with a signature matching `apexovernsq.PublishFunc`. This is typically `github.com/nsqio/go-nsq.Producer.Publish`, or a function that wraps it.
    * A string naming the nsq topic the log messages will be sent to.
 
-Once you've got a handler, you can use it in apex/log by calling `github.com/apex/log.SetHandler`, with your handler instance as it's only argument. 
+Once you've got a handler, you can use it in apex/log by calling `github.com/apex/log.SetHandler`, with your handler instance as the only argument. 
 
 ### Partial Example
 
@@ -115,15 +115,15 @@ func main() {
 }
 ```
 
-For a more complete example look at the `nsq-log-tail` program in the `apps` sub-directory.
+For another example look at the `nsq-log-tail` program in the `apps` sub-directory.
 
 # Niceties
 
-Additionally we provide a few additional useful mechanisms.
+We provide a few additional useful mechanisms.
 
 ## NewApexLogServiceContext
 
-The function `apexovernsq.NewApexLogServiceContext`returns an apex log `Entry`with some standard fields set: 
+The function `apexovernsq.NewApexLogServiceContext` returns an apex log `Entry` with some standard fields set: 
 
    * "service" - the name of the process that is logging.
    * "hostname" - the hostname of the machine that created the log message.
