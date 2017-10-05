@@ -1,7 +1,7 @@
 # apexovernsq
 
 ## Overview
-The apexovernsq package provides a mechanism to transfer structured log entries, generated with the Apex log package ( [github.com/apex/log](https://github.com/apex/log) ) over NSQ ( [github.com/nsqio](https://github.com/nsqio) ).  Specifically it allows Apex's `log.Entry` structs to be marshalled, published to an NSQ topic and then unmarshalled at the other end and injected into a local Apex log handler.
+The apexovernsq package provides a mechanism to transfer structured log entries, generated with the Apex log package ( [github.com/apex/log](https://github.com/apex/log) ) over NSQ ( [github.com/nsqio](https://github.com/nsqio) ).  Specifically, it allows Apex's `log.Entry` structs to be marshalled, published to an NSQ topic and then unmarshalled at the other end and injected into a local Apex log handler.
 
 ## Putting log messages onto the NSQ channel
 
@@ -115,11 +115,11 @@ func main() {
 }
 ```
 
-For a more complete example look at the `nsq-log-tail`programg in the `apps` subdirectory.
+For a more complete example look at the `nsq-log-tail` program in the `apps` sub-directory.
 
-# Nicities
+# Niceties
 
-Additionally we provide a few additional useful mecahisms.
+Additionally we provide a few additional useful mechanisms.
 
 ## NewApexLogServiceContext
 
@@ -129,7 +129,7 @@ The function `apexovernsq.NewApexLogServiceContext`returns an apex log `Entry`wi
    * "hostname" - the hostname of the machine that created the log message.
    * "pid" - the process ID of the process that created the log message.
    
-You can pass this `Entry` around and use it as a context for log calls (as per normal operaion with apex log).  Having these standard fields set is very helpful if, for example, you wish to aggregate the logs from multiple services and/or hosts.
+You can pass this `Entry` around and use it as a context for log calls (as per normal operation with apex log).  Having these standard fields set is very helpful if, for example, you wish to aggregate the logs from multiple services and/or hosts.
 
 ## Protobuf
 
