@@ -1,4 +1,4 @@
-# apexovernsq
+# apexovernsq [![Build Status](https://travis-ci.org/avct/apexovernsq.svg?branch=master)](https://travis-ci.org/avct/apexovernsq)
 
 ## Overview
 The apexovernsq package provides a mechanism to transfer structured log entries, generated with the Apex log package ( [github.com/apex/log](https://github.com/apex/log) ) over NSQ ( [github.com/nsqio](https://github.com/nsqio) ).  Specifically, it allows Apex's `log.Entry` structs to be marshalled, published to an NSQ topic and then unmarshalled at the other end and injected into a local Apex log handler.
