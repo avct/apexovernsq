@@ -38,9 +38,11 @@ func NewApexLogServiceContext() *log.Entry {
 
 // Create a new logging context, with a handler that isn't the default handler and with service information appended.
 func NewApexLogServiceContextWithHandler(handler log.Handler) *log.Entry {
-	logger, _ := log.Log.(*log.Logger)
+	logger := &log.Logger{
+		Handler: handler,
+		Level:   log.Log.(*log.Logger).Level,
+	}
 	entry := log.NewEntry(logger)
-	entry.Logger.Handler = handler
 	return appendServiceFieldsToEntry(entry)
 }
 

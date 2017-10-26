@@ -138,4 +138,4 @@ generates a go library containing a `Marshal` and an `Unmarshal`
 function that can be used by the producing and consuming handlers in
 `apexovernsq`. You'll find these functions by importing
 `github.com/avct/apexovernsq/protobuf`
->>>>>>> 111f09128073ebda85b00be7247f20faf9848edb
+
