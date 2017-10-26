@@ -42,7 +42,8 @@ func Marshal(x interface{}) ([]byte, error) {
 			continue
 		}
 		if stringer, ok = value.(fmt.Stringer); !ok {
-			return nil, fmt.Errorf("Value for field %s is not a string, nor does it satisfy fmt.Stringer",		}
+			return nil, fmt.Errorf("Value for field %s is not a string, nor does it satisfy fmt.Stringer", key)
+		}
 		fields[key] = stringer.String()
 	}
 	entry := &Entry{
