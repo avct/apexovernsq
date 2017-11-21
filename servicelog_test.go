@@ -58,7 +58,7 @@ func TestNewServiceLogContextWithHandler(t *testing.T) {
 	mem := memory.New()
 	lf := logfmt.New(os.Stdout)
 	log.SetHandler(lf)
-	ctx2 := NewApexLogServiceContextWithHandler(mem)
+	ctx2 := NewApexLogServiceContextWithHandler(mem, log.DebugLevel)
 	_, ok := ctx2.Logger.Handler.(*logfmt.Handler)
 	if ok {
 		t.Fatal("got logfmt handler expected memory handler")
