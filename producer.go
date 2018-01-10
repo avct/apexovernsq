@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/logfmt"
 )
 
 // PublishFunc is a function signature for any function that publishes
@@ -66,4 +67,78 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 		return err
 	}
 	return h.publishFunc(h.topic, payload)
+}
+
+// AsyncApexLogNSQHandler is a handler that can be passed to
+// github.com/apex/log.SetHandler and will publish log entries on NSQ
+// asynchronously.
+type AsyncApexLogNSQHandler struct {
+	mu       sync.Mutex
+	logChan  chan *log.Entry
+	stopChan chan bool
+}
+
+// NewAsyncApexLogNSQHandler returns a pointer to an
+// apexovernsq.AsyncApexLogNSQHandler that can in turn be passed to
+// github.com/apex/log.SetHandler.  The AsyncApexLogNSQHandler uses a
+// goroutine and a channel to make the publication of NSQ message
+// asynchronous to the act of logging.
+//
+// The marshalFunc provided will be used to marshal a
+// github.com/apex/log.Entry as the body of a message sent over nsq.
+//
+// The publishFunc is used to push a message onto the nsq.  For simple
+// cases, with only one nsq endpoint using
+// github.com/nsqio/go-nsq.Producer.Publish is fine.  For cases with
+// multiple producers you'll want to wrap it.  See the examples
+// directory for an implementation of this.
+//
+// The topic is a string determining the nsq topic the messages will
+// be published to.
+//
+func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string) *AsyncApexLogNSQHandler {
+	backupLogger := log.Logger{
+		Handler: logfmt.Default,
+		Level:   log.InfoLevel,
+	}
+	logChan := make(chan *log.Entry, 50)
+	stopChan := make(chan bool, 1)
+	go func(cLog chan *log.Entry, cStop chan bool) {
+		var e *log.Entry
+		for {
+			select {
+			case e = <-cLog:
+				payload, err := marshalFunc(e)
+				if err != nil {
+					backupLogger.WithError(err).Error("Marshalling log.Entry in AsyncApexLogNSQHander")
+					backupLogger.Handler.HandleLog(e)
+					continue
+				}
+				err = publishFunc(topic, payload)
+				if err != nil {
+					backupLogger.WithError(err).Error("Publishing in AsyncApexLogNSQHander")
+					backupLogger.Handler.HandleLog(e)
+					continue
+				}
+			case <-cStop:
+				break
+			}
+
+		}
+	}(logChan, stopChan)
+	return &AsyncApexLogNSQHandler{
+		logChan:  logChan,
+		stopChan: stopChan,
+	}
+}
+
+func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
+	h.mu.Lock()
+	h.logChan <- e
+	h.mu.Unlock()
+	return nil
+}
+
+func (h *AsyncApexLogNSQHandler) Stop() {
+	h.stopChan <- true
 }

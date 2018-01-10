@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 )
@@ -80,4 +81,82 @@ func TestApexLogNSQHandler(t *testing.T) {
 	if errorField != "Test Error" {
 		t.Errorf("Expected 'error' field to be \"Test Error\" got %q", errorField)
 	}
+}
+
+func TestNewAsyncApexLogHandler(t *testing.T) {
+	fakePublish := func(topic string, body []byte) error {
+		return nil
+	}
+	fakeMarshal := func(x interface{}) ([]byte, error) {
+		return nil, nil
+	}
+	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing")
+	if handler == nil {
+		t.Fatal("Expected *AsyncApexLogNSQHandler, got nil")
+	}
+	if handler.logChan == nil {
+		t.Fatal("Expected the establishment of a buffered channel for *log.Entry")
+	}
+	if handler.stopChan == nil {
+		t.Fatal("Expected the establishment of a channel for stopping the go routine")
+	}
+	handler.Stop()
+}
+
+func TestAsyncApexLogHandlerSendsMessagesToBePublished(t *testing.T) {
+	fakePublish := func(topic string, body []byte) error {
+		return nil
+	}
+	fakeMarshal := func(x interface{}) ([]byte, error) {
+		return nil, nil
+	}
+	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing")
+	log.SetHandler(handler)
+	handler.Stop() // Stop any messages getting consumed
+	log.Info("Log something")
+	entry := <-handler.logChan
+	if entry == nil {
+		t.Fatal("No log.Entry on channel")
+	}
+	if entry.Message != "Log something" {
+		t.Fatal("Incorrect log.Entry on channel")
+	}
+}
+
+func TestAsyncApexLogNSQHandlerLogs(t *testing.T) {
+	var messages []*[]byte
+	var loggedTopic string
+	fakePublish := func(topic string, body []byte) error {
+		messages = append(messages, &body)
+		loggedTopic = topic
+		return nil
+	}
+
+	handler := NewAsyncApexLogNSQHandler(json.Marshal, fakePublish, "testing")
+	log.SetHandler(handler)
+	log.WithField("user", "tealeg").Info("Hello")
+	var messageCount int
+	timeout := time.After(time.Second)
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+Loop:
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("Nothing logged within 1 second")
+			break Loop
+		case <-ticker.C:
+			messageCount = len(messages)
+			if messageCount > 0 {
+				break Loop
+			}
+		}
+
+	}
+
+	if messageCount == 0 {
+		t.Fatal("No messages logged")
+	}
+
+	handler.Stop()
 }
