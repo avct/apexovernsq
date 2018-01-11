@@ -13,6 +13,13 @@ import (
 	"github.com/apex/log/handlers/logfmt"
 )
 
+var (
+	backupLogger = log.Logger{
+		Handler: logfmt.Default,
+		Level:   log.InfoLevel,
+	}
+)
+
 // PublishFunc is a function signature for any function that publishes
 // a message on a provided nsq topic.  Typically this is
 // github.com/nsqio/go-nsq.Producer.Publish, or something that wraps
@@ -96,12 +103,8 @@ type AsyncApexLogNSQHandler struct {
 // The topic is a string determining the nsq topic the messages will
 // be published to.
 //
-func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string) *AsyncApexLogNSQHandler {
-	backupLogger := log.Logger{
-		Handler: logfmt.Default,
-		Level:   log.InfoLevel,
-	}
-	logChan := make(chan *log.Entry, 50)
+func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string, bufferSize int) *AsyncApexLogNSQHandler {
+	logChan := make(chan *log.Entry, bufferSize)
 	stopChan := make(chan bool, 1)
 	go func(cLog chan *log.Entry, cStop chan bool) {
 		var e *log.Entry
@@ -134,6 +137,13 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 
 func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
+	select {
+	case h.logChan <- e:
+		// Do nothing more
+	default:
+		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
+		backupLogger.Handler.HandleLog(e)
+	}
 	h.logChan <- e
 	h.mu.Unlock()
 	return nil

@@ -90,7 +90,7 @@ func TestNewAsyncApexLogHandler(t *testing.T) {
 	fakeMarshal := func(x interface{}) ([]byte, error) {
 		return nil, nil
 	}
-	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing")
+	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing", 2)
 	if handler == nil {
 		t.Fatal("Expected *AsyncApexLogNSQHandler, got nil")
 	}
@@ -110,7 +110,7 @@ func TestAsyncApexLogHandlerSendsMessagesToBePublished(t *testing.T) {
 	fakeMarshal := func(x interface{}) ([]byte, error) {
 		return nil, nil
 	}
-	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing")
+	handler := NewAsyncApexLogNSQHandler(fakeMarshal, fakePublish, "testing", 2)
 	log.SetHandler(handler)
 	handler.Stop() // Stop any messages getting consumed
 	log.Info("Log something")
@@ -132,7 +132,7 @@ func TestAsyncApexLogNSQHandlerLogs(t *testing.T) {
 		return nil
 	}
 
-	handler := NewAsyncApexLogNSQHandler(json.Marshal, fakePublish, "testing")
+	handler := NewAsyncApexLogNSQHandler(json.Marshal, fakePublish, "testing", 2)
 	log.SetHandler(handler)
 	log.WithField("user", "tealeg").Info("Hello")
 	var messageCount int
