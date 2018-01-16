@@ -3,6 +3,7 @@ package apexovernsq
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,6 +82,19 @@ func TestApexLogNSQHandler(t *testing.T) {
 	if errorField != "Test Error" {
 		t.Errorf("Expected 'error' field to be \"Test Error\" got %q", errorField)
 	}
+
+	callerFile := entry.Fields.Get("caller_file").(string)
+	expected := "producer_test.go"
+	if !strings.HasSuffix(callerFile, expected) {
+		t.Fatalf("Expected caller file to be %q, but got %q", expected, callerFile)
+	}
+
+	callerLine := entry.Fields.Get("caller_line").(string)
+	expected = "50" // Sorry, this test is going to break a lot ;-)
+	if callerLine != expected {
+		t.Fatalf("Expected caller line to be %q, but got %q", expected, callerLine)
+	}
+
 }
 
 func TestNewAsyncApexLogHandler(t *testing.T) {
@@ -159,4 +173,5 @@ Loop:
 	}
 
 	handler.Stop()
+
 }

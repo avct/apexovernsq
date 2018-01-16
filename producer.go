@@ -7,11 +7,15 @@ other side.
 package apexovernsq
 
 import (
+	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
 )
+
+const handleLogDepth int = 4
 
 var (
 	backupLogger = log.Logger{
@@ -36,6 +40,14 @@ type ApexLogNSQHandler struct {
 	marshalFunc MarshalFunc
 	publishFunc PublishFunc
 	topic       string
+}
+
+func setCallerFields(e *log.Entry) {
+	_, file, line, ok := runtime.Caller(handleLogDepth)
+	if ok {
+		e.Fields["caller_file"] = file
+		e.Fields["caller_line"] = strconv.Itoa(line)
+	}
 }
 
 // NewApexLogNSQHandler returns a pointer to an apexovernsq.ApexLogNSQHandler that can
@@ -68,6 +80,8 @@ func NewApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topi
 func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	setCallerFields(e)
 
 	payload, err := h.marshalFunc(e)
 	if err != nil {
@@ -137,6 +151,8 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 
 func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
+	setCallerFields(e)
+
 	select {
 	case h.logChan <- e:
 		// Do nothing more
