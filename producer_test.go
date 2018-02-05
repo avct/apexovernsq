@@ -38,10 +38,8 @@ func TestNewApexLogNSQHandler(t *testing.T) {
 
 func TestApexLogNSQHandler(t *testing.T) {
 	var messages []*[]byte
-	var loggedTopic string
 	fakePublish := func(topic string, body []byte) error {
 		messages = append(messages, &body)
-		loggedTopic = topic
 		return nil
 	}
 
@@ -139,10 +137,8 @@ func TestAsyncApexLogHandlerSendsMessagesToBePublished(t *testing.T) {
 
 func TestAsyncApexLogNSQHandlerLogs(t *testing.T) {
 	var messages []*[]byte
-	var loggedTopic string
 	fakePublish := func(topic string, body []byte) error {
 		messages = append(messages, &body)
-		loggedTopic = topic
 		return nil
 	}
 
