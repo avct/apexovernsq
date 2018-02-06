@@ -7,12 +7,12 @@ other side.
 package apexovernsq
 
 import (
-	"runtime"
 	"strconv"
 	"sync"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
+	"github.com/tealeg/callstack"
 )
 
 const handleLogDepth int = 4
@@ -43,10 +43,23 @@ type ApexLogNSQHandler struct {
 }
 
 func setCallerFields(e *log.Entry) {
-	_, file, line, ok := runtime.Caller(handleLogDepth)
-	if ok {
-		e.Fields["caller_file"] = file
-		e.Fields["caller_line"] = strconv.Itoa(line)
+	frames := callstack.FramesAbove("github.com/apex/log.(*Logger).log", 20)
+	if frames == nil {
+		return
+	}
+	// The next frame will be the specifc logging call that was
+	// made, but not yet the callsite.
+	frame, more := frames.Next()
+	if !more {
+		// We need to take one more step back, so if there
+		// aren't more frames we've got nothing to say.
+		return
+	}
+	frame, _ = frames.Next()
+	if frame.Func != nil {
+		e.Fields["caller_file"] = frame.File
+		e.Fields["caller_line"] = strconv.Itoa(frame.Line)
+		e.Fields["caller_func"] = frame.Function
 	}
 }
 

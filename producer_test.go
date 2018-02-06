@@ -38,10 +38,8 @@ func TestNewApexLogNSQHandler(t *testing.T) {
 
 func TestApexLogNSQHandler(t *testing.T) {
 	var messages []*[]byte
-	var loggedTopic string
 	fakePublish := func(topic string, body []byte) error {
 		messages = append(messages, &body)
-		loggedTopic = topic
 		return nil
 	}
 
@@ -90,7 +88,7 @@ func TestApexLogNSQHandler(t *testing.T) {
 	}
 
 	callerLine := entry.Fields.Get("caller_line").(string)
-	expected = "50" // Sorry, this test is going to break a lot ;-)
+	expected = "48" // Sorry, this test is going to break a lot ;-)
 	if callerLine != expected {
 		t.Fatalf("Expected caller line to be %q, but got %q", expected, callerLine)
 	}
@@ -139,10 +137,8 @@ func TestAsyncApexLogHandlerSendsMessagesToBePublished(t *testing.T) {
 
 func TestAsyncApexLogNSQHandlerLogs(t *testing.T) {
 	var messages []*[]byte
-	var loggedTopic string
 	fakePublish := func(topic string, body []byte) error {
 		messages = append(messages, &body)
-		loggedTopic = topic
 		return nil
 	}
 
