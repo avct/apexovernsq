@@ -93,6 +93,12 @@ func TestApexLogNSQHandler(t *testing.T) {
 		t.Fatalf("Expected caller line to be %q, but got %q", expected, callerLine)
 	}
 
+	callerFunc := entry.Fields.Get("caller_func").(string)
+	expected = "github.com/avct/apexovernsq.TestApexLogNSQHandler"
+	if callerFunc != expected {
+		t.Fatalf("Expected caller function to be %q, but got %q", expected, callerFunc)
+	}
+
 }
 
 func TestNewAsyncApexLogHandler(t *testing.T) {
