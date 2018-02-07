@@ -90,11 +90,10 @@ func TestApexLogNSQHandler(t *testing.T) {
 	}
 
 	callerLine := entry.Fields.Get("caller_line").(string)
-	expected = "48" // Sorry, this test is going to break a lot ;-)
+	expected = "50" // Sorry, this test is going to break a lot ;-)
 	if callerLine != expected {
 		t.Fatalf("Expected caller line to be %q, but got %q", expected, callerLine)
 	}
-
 }
 
 func TestNewAsyncApexLogHandler(t *testing.T) {
