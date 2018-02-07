@@ -108,9 +108,10 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 // github.com/apex/log.SetHandler and will publish log entries on NSQ
 // asynchronously.
 type AsyncApexLogNSQHandler struct {
-	mu       sync.Mutex
-	logChan  chan *log.Entry
-	stopChan chan bool
+	mu          sync.Mutex
+	logChan     chan *log.Entry
+	stopChan    chan bool
+	logChanFull bool
 }
 
 // NewAsyncApexLogNSQHandler returns a pointer to an
@@ -188,10 +189,15 @@ func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 
 	select {
 	case h.logChan <- e:
+		if h.logChanFull {
+			h.logChanFull = false
+		}
 		// Do nothing more
 	default:
-		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
-		backupLogger.Handler.HandleLog(e)
+		if !h.logChanFull {
+			backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
+			h.logChanFull = true
+		}
 	}
 	h.mu.Unlock()
 	return nil
