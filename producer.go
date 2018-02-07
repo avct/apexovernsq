@@ -9,13 +9,14 @@ package apexovernsq
 import (
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
 	"github.com/tealeg/callstack"
 )
 
-const handleLogDepth int = 4
+const maximumBackoffMultiple = 512
 
 var (
 	backupLogger = log.Logger{
@@ -131,25 +132,44 @@ type AsyncApexLogNSQHandler struct {
 // be published to.
 //
 func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string, bufferSize int) *AsyncApexLogNSQHandler {
+	var backoff time.Duration = 0
 	logChan := make(chan *log.Entry, bufferSize)
 	stopChan := make(chan bool, 1)
+
+	incrementBackoff := func(backoff time.Duration) time.Duration {
+		if backoff == 0 {
+			return 1
+		}
+		newBackoff := backoff * 2
+		if newBackoff > maximumBackoffMultiple {
+			return maximumBackoffMultiple
+		}
+		return newBackoff
+	}
+
 	go func(cLog chan *log.Entry, cStop chan bool) {
 		var e *log.Entry
 		for {
+			if backoff > 0 {
+				time.Sleep(time.Second * backoff)
+			}
 			select {
 			case e = <-cLog:
 				payload, err := marshalFunc(e)
 				if err != nil {
 					backupLogger.WithError(err).Error("Marshalling log.Entry in AsyncApexLogNSQHander")
 					backupLogger.Handler.HandleLog(e)
+					backoff = incrementBackoff(backoff)
 					continue
 				}
 				err = publishFunc(topic, payload)
 				if err != nil {
-					backupLogger.WithError(err).Error("Publishing in AsyncApexLogNSQHander")
+					backupLogger.WithField("backoff", time.Second*backoff).WithError(err).Error("Publishing in AsyncApexLogNSQHander")
 					backupLogger.Handler.HandleLog(e)
+					backoff = incrementBackoff(backoff)
 					continue
 				}
+				backoff = 0
 			case <-cStop:
 				break
 			}
