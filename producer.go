@@ -133,11 +133,11 @@ type AsyncApexLogNSQHandler struct {
 // be published to.
 //
 func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string, bufferSize int) *AsyncApexLogNSQHandler {
-	var backoff time.Duration = 0
+	var backoff = 0
 	logChan := make(chan *log.Entry, bufferSize)
 	stopChan := make(chan bool, 1)
 
-	incrementBackoff := func(backoff time.Duration) time.Duration {
+	incrementBackoff := func(backoff int) int {
 		if backoff == 0 {
 			return 1
 		}
@@ -152,7 +152,7 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 		var e *log.Entry
 		for {
 			if backoff > 0 {
-				time.Sleep(time.Second * backoff)
+				time.Sleep(time.Second * time.Duration(backoff))
 			}
 			select {
 			case e = <-cLog:
@@ -165,7 +165,7 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 				}
 				err = publishFunc(topic, payload)
 				if err != nil {
-					backupLogger.WithField("backoff", time.Second*backoff).WithError(err).Error("Publishing in AsyncApexLogNSQHander")
+					backupLogger.WithField("backoff", time.Second*time.Duration(backoff)).WithError(err).Error("Publishing in AsyncApexLogNSQHander")
 					backupLogger.Handler.HandleLog(e)
 					backoff = incrementBackoff(backoff)
 					continue
