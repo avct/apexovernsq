@@ -19,7 +19,7 @@ Once you've got a handler, you can use it in apex/log by calling `github.com/ape
 package main
 
 import (
-	"github.com/avct/apexovernsq"
+	"code.avct.io/apexovernsq"
 	nsq "github.com/nsqio/go-nsq"
 	alog "github.com/apex/log"
 )
@@ -61,8 +61,9 @@ import (
 
 	alog "github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
-	"github.com/avct/apexovernsq"
 	nsq "github.com/nsqio/go-nsq"
+
+	"code.avct.io/apexovernsq"
 )
 
 func main() {
@@ -137,5 +138,5 @@ We provide a protobuf definition of the apex log `Entry` struct, which
 generates a go library containing a `Marshal` and an `Unmarshal`
 function that can be used by the producing and consuming handlers in
 `apexovernsq`. You'll find these functions by importing
-`github.com/avct/apexovernsq/protobuf`
+`code.avct.io/apexovernsq/protobuf`
 
