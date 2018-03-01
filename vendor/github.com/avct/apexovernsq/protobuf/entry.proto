@@ -1,9 +1,0 @@
-syntax = "proto3";
-package protobuf;
-
-message Entry {
-  map<string, string> Fields = 1;
-  string Level = 2;
-  bytes Timestamp = 3;
-  string Message = 4;
-}

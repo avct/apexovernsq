@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/avct/apexovernsq"
-	"github.com/avct/apexovernsq/protobuf"
+	"code.avct.io/apexovernsq"
+	"code.avct.io/apexovernsq/protobuf"
 
 	alog "github.com/apex/log"
 	"github.com/apex/log/handlers/cli"

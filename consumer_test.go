@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/avct/apexovernsq/protobuf"
+	"code.avct.io/apexovernsq/protobuf"
 
 	alog "github.com/apex/log"
 	"github.com/apex/log/handlers/memory"

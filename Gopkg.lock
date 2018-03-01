@@ -13,15 +13,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/avct/apexovernsq"
-  packages = [
-    ".",
-    "protobuf"
-  ]
-  revision = "e7906bc3d9ec9b5103563505f36d1e32bca02856"
-
-[[projects]]
   name = "github.com/go-logfmt/logfmt"
   packages = ["."]
   revision = "390ab7935ee28ec6b286364bba9b4dd6410cb3d5"
@@ -57,15 +48,9 @@
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
-[[projects]]
-  branch = "master"
-  name = "github.com/tealeg/callstack"
-  packages = ["."]
-  revision = "17e7d0cefe80f40c0ffbb26e3458b0513c2ac7b8"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6b871134fc0e931bc778fecb6472fa17bd15142626af62234a0bc7b2b252ade8"
+  inputs-digest = "b60576332481b1b5c5d0f76bbd7f2229d3c40d8e54f91ec5be16e71eac8bbbc8"
   solver-name = "gps-cdcl"
   solver-version = 1
