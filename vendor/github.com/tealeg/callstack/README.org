@@ -1,0 +1,50 @@
+* callstack
+** Overview
+=callstack= provides the =FramesAbove= function which will return a
+=*runtime.Frames= that, when =Next()= is called on it, will return a
+=runtime.Frame= describing the frame immediately above a named
+function in the callstack.  This allows you to find the call site for
+a commonly used function without relying on knowing the calldepth.
+The canonical case for this (in my workplace) is adding file names and
+line numbers for logging calls made to the the [[github.com/apex/log][Apex Log]] structured
+logging package when an an arbitrary long chaing of log handlers lay
+between the known logging call and the place where this information
+will be interrogated.
+
+** Usage
+
+You must provide =callstack.FramesAbove= with a fully-qualified
+function name to match against, and a maximum call depth to step back
+up the callstack.
+
+*** Example 
+
+#+BEGIN_SRC go
+package main
+
+import (
+	"fmt"
+
+	"github.com/tealeg/callstack"
+)
+
+func b() {
+	frames := callstack.FramesAbove("github.com/tealeg/callstack.FramesAbove", 1)
+	if frames == nil {
+		fmt.Printf("No frame found")
+		return
+	}
+	frame, _ := frames.Next()
+	fmt.Printf("frame function: %q, file: %q, line: %d\n", frame.Function, frame.File, frame.Line)
+}
+
+func a() {
+	b()
+}
+
+func main() {
+	a()
+}
+#+END_SRC
+
+

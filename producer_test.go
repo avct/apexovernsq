@@ -3,7 +3,7 @@ package apexovernsq
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -80,25 +80,6 @@ func TestApexLogNSQHandler(t *testing.T) {
 	if errorField != "Test Error" {
 		t.Errorf("Expected 'error' field to be \"Test Error\" got %q", errorField)
 	}
-
-	callerFile := entry.Fields.Get("caller_file").(string)
-	expected := "producer_test.go"
-	if !strings.HasSuffix(callerFile, expected) {
-		t.Fatalf("Expected caller file to be %q, but got %q", expected, callerFile)
-	}
-
-	callerLine := entry.Fields.Get("caller_line").(string)
-	expected = "48" // Sorry, this test is going to break a lot ;-)
-	if callerLine != expected {
-		t.Fatalf("Expected caller line to be %q, but got %q", expected, callerLine)
-	}
-
-	callerFunc := entry.Fields.Get("caller_func").(string)
-	expected = "github.com/avct/apexovernsq.TestApexLogNSQHandler"
-	if callerFunc != expected {
-		t.Fatalf("Expected caller function to be %q, but got %q", expected, callerFunc)
-	}
-
 }
 
 func TestNewAsyncApexLogHandler(t *testing.T) {
@@ -143,8 +124,11 @@ func TestAsyncApexLogHandlerSendsMessagesToBePublished(t *testing.T) {
 
 func TestAsyncApexLogNSQHandlerLogs(t *testing.T) {
 	var messages []*[]byte
+	var mu sync.RWMutex
 	fakePublish := func(topic string, body []byte) error {
+		mu.Lock()
 		messages = append(messages, &body)
+		mu.Unlock()
 		return nil
 	}
 
@@ -162,7 +146,9 @@ Loop:
 			t.Fatal("Nothing logged within 1 second")
 			break Loop
 		case <-ticker.C:
+			mu.RLock()
 			messageCount = len(messages)
+			mu.RUnlock()
 			if messageCount > 0 {
 				break Loop
 			}
