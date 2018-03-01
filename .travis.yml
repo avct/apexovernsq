@@ -3,6 +3,7 @@ go:
   - 1.9.x
   - "1.10.x"
   - tip
+go_import_path: code.avct.io/apexovernsq
 script:
   - go vet ./...
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic
