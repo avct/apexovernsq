@@ -122,6 +122,11 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 		return newBackoff
 	}
 
+	handler := &AsyncApexLogNSQHandler{
+		logChan:  logChan,
+		stopChan: stopChan,
+	}
+
 	go func(cLog chan *log.Entry, cStop chan bool) {
 		var e *log.Entry
 		for {
@@ -132,16 +137,21 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 			case e = <-cLog:
 				payload, err := marshalFunc(e)
 				if err != nil {
+					handler.mu.Lock()
 					backupLogger.WithError(err).Error("Marshalling log.Entry in AsyncApexLogNSQHander")
-					backupLogger.Handler.HandleLog(e)
 					backoff = incrementBackoff(backoff)
+					handler.mu.Unlock()
+
 					continue
 				}
+
 				err = publishFunc(topic, payload)
 				if err != nil {
+					handler.mu.Lock()
 					backupLogger.WithField("backoff", time.Second*time.Duration(backoff)).WithError(err).Error("Publishing in AsyncApexLogNSQHander")
-					backupLogger.Handler.HandleLog(e)
 					backoff = incrementBackoff(backoff)
+					handler.mu.Unlock()
+
 					continue
 				}
 				backoff = 0
@@ -151,14 +161,12 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 
 		}
 	}(logChan, stopChan)
-	return &AsyncApexLogNSQHandler{
-		logChan:  logChan,
-		stopChan: stopChan,
-	}
+	return handler
 }
 
 func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	select {
 	case h.logChan <- e:
@@ -166,7 +174,6 @@ func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	default:
 		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
 	}
-	h.mu.Unlock()
 	return nil
 }
 
