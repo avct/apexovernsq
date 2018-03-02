@@ -53,7 +53,7 @@ func TestMarshalAndUnmarshalEntry(t *testing.T) {
 	if logEntry.Level != entry.Level {
 		t.Error("Failed to set Entry.Level")
 	}
-	if logEntry.Timestamp != entry.Timestamp {
+	if logEntry.Timestamp.UTC() != entry.Timestamp.UTC() {
 		t.Error("Failed to set Entry.Timestamp")
 	}
 	if logEntry.Message != entry.Message {

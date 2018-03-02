@@ -7,13 +7,11 @@ other side.
 package apexovernsq
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
-	"github.com/tealeg/callstack"
 )
 
 const maximumBackoffMultiple = 512
@@ -41,27 +39,6 @@ type ApexLogNSQHandler struct {
 	marshalFunc MarshalFunc
 	publishFunc PublishFunc
 	topic       string
-}
-
-func setCallerFields(e *log.Entry) {
-	frames := callstack.FramesAbove("github.com/apex/log.(*Logger).log", 20)
-	if frames == nil {
-		return
-	}
-	// The next frame will be the specifc logging call that was
-	// made, but not yet the callsite.
-	frame, more := frames.Next()
-	if !more {
-		// We need to take one more step back, so if there
-		// aren't more frames we've got nothing to say.
-		return
-	}
-	frame, _ = frames.Next()
-	if frame.Func != nil {
-		e.Fields["caller_file"] = frame.File
-		e.Fields["caller_line"] = strconv.Itoa(frame.Line)
-		e.Fields["caller_func"] = frame.Function
-	}
 }
 
 // NewApexLogNSQHandler returns a pointer to an apexovernsq.ApexLogNSQHandler that can
@@ -95,8 +72,6 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	setCallerFields(e)
-
 	payload, err := h.marshalFunc(e)
 	if err != nil {
 		return err
@@ -108,10 +83,9 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 // github.com/apex/log.SetHandler and will publish log entries on NSQ
 // asynchronously.
 type AsyncApexLogNSQHandler struct {
-	mu          sync.Mutex
-	logChan     chan *log.Entry
-	stopChan    chan bool
-	logChanFull bool
+	mu       sync.Mutex
+	logChan  chan *log.Entry
+	stopChan chan bool
 }
 
 // NewAsyncApexLogNSQHandler returns a pointer to an
@@ -185,19 +159,12 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 
 func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
-	setCallerFields(e)
 
 	select {
 	case h.logChan <- e:
-		if h.logChanFull {
-			h.logChanFull = false
-		}
 		// Do nothing more
 	default:
-		if !h.logChanFull {
-			backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
-			h.logChanFull = true
-		}
+		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
 	}
 	h.mu.Unlock()
 	return nil
