@@ -122,29 +122,11 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 		stopChan: stopChan,
 	}
 
-	publishOrRetry := func(maxBackoff time.Duration, e *log.Entry) error {
-		var err error
-
-		payload, err := marshalFunc(e)
-		if err != nil {
-			return err
+	// Form a closure over topic and publishFunc to keep the interface clean
+	publishF := func(payload []byte) func() error {
+		return func() error {
+			return publishFunc(topic, payload)
 		}
-
-		for i := 0; true; i++ {
-			err = publishFunc(topic, payload)
-			if err == nil {
-				break
-			}
-			backoff := time.Duration(math.Exp(float64(i))) * time.Second
-			backupLogger.WithError(err).WithField("backoff", backoff).Info("failed to publish, backing off and retrying")
-			if backoff > maxBackoff {
-				err = fmt.Errorf("giving up after %v retries, too many errors. last error: %s", i, err)
-				break
-			}
-			time.Sleep(backoff)
-		}
-		return err
-
 	}
 
 	handler.wg.Add(1)
@@ -153,7 +135,16 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 		for {
 			select {
 			case e = <-cLog:
-				err := publishOrRetry(time.Second*time.Duration(maximumBackoffMultiple), e)
+				payload, err := marshalFunc(e)
+				if err != nil {
+					handler.mu.Lock()
+					backupLogger.WithError(err).Error("cannot marshal log entry")
+					handler.mu.Unlock()
+					continue
+				}
+				err = publishOrRetry(
+					time.Second*time.Duration(maximumBackoffMultiple),
+					publishF(payload))
 				if err != nil {
 					handler.mu.Lock()
 					backupLogger.WithError(err).Error("Publishing in AsyncApexLogNSQHander")
@@ -188,4 +179,23 @@ func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 func (h *AsyncApexLogNSQHandler) Stop() {
 	h.stopChan <- true
 	h.wg.Wait()
+}
+
+func publishOrRetry(maxBackoff time.Duration, fn func() error) error {
+	var err error
+
+	for i := 0; true; i++ {
+		err = fn()
+		if err == nil {
+			break
+		}
+		backoff := time.Duration(math.Exp(float64(i))) * time.Second
+		backupLogger.WithError(err).WithField("backoff", backoff).Info("failed to publish, backing off and retrying")
+		if backoff > maxBackoff {
+			err = fmt.Errorf("giving up after %v retries, too many errors. last error: %s", i, err)
+			break
+		}
+		time.Sleep(backoff)
+	}
+	return err
 }
