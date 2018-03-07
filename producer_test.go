@@ -2,12 +2,14 @@ package apexovernsq
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/memory"
 )
 
 func TestNewApexLogNSQHandler(t *testing.T) {
@@ -161,5 +163,45 @@ Loop:
 	}
 
 	handler.Stop()
+}
 
+func TestAsyncApexLogNSQHandlerBacksOff(t *testing.T) {
+	backupHandler := memory.New()
+
+	backupLogger = log.Logger{
+		Handler: backupHandler,
+		Level:   log.InfoLevel,
+	}
+
+	failyPublish := func(topic string, body []byte) error {
+		return errors.New("oopsy")
+	}
+
+	handler := NewAsyncApexLogNSQHandler(json.Marshal, failyPublish, "testing", 5)
+	log.SetHandler(handler)
+	log.WithField("user", "tealeg").Info("Hello")
+	timeout := time.After(time.Second * 6)
+	<-timeout
+	handler.Stop()
+	entries := backupHandler.Entries
+	expected := map[time.Duration]bool{
+		1 * time.Second: false,
+		2 * time.Second: false,
+		7 * time.Second: false,
+	}
+	for _, entry := range entries {
+		inter, ok := entry.Fields["backoff"]
+		if ok {
+			backoff, _ := inter.(time.Duration)
+			_, found := expected[backoff]
+			if found {
+				expected[backoff] = true
+			}
+		}
+	}
+	for backoff, found := range expected {
+		if !found {
+			t.Errorf("Expected to see a %s backoff, but it was not found", backoff)
+		}
+	}
 }

@@ -7,13 +7,16 @@ other side.
 package apexovernsq
 
 import (
+	"fmt"
+	"math"
 	"sync"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/logfmt"
 )
 
-const handleLogDepth int = 4
+const maximumBackoffMultiple = 5
 
 var (
 	backupLogger = log.Logger{
@@ -75,7 +78,11 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	if err != nil {
 		return err
 	}
-	return h.publishFunc(h.topic, payload)
+	err = h.publishFunc(h.topic, payload)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // AsyncApexLogNSQHandler is a handler that can be passed to
@@ -83,6 +90,7 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 // asynchronously.
 type AsyncApexLogNSQHandler struct {
 	mu       sync.Mutex
+	wg       sync.WaitGroup
 	logChan  chan *log.Entry
 	stopChan chan bool
 }
@@ -108,6 +116,20 @@ type AsyncApexLogNSQHandler struct {
 func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc, topic string, bufferSize int) *AsyncApexLogNSQHandler {
 	logChan := make(chan *log.Entry, bufferSize)
 	stopChan := make(chan bool, 1)
+
+	handler := &AsyncApexLogNSQHandler{
+		logChan:  logChan,
+		stopChan: stopChan,
+	}
+
+	// Form a closure over topic and publishFunc to keep the interface clean
+	publishF := func(payload []byte) func() error {
+		return func() error {
+			return publishFunc(topic, payload)
+		}
+	}
+
+	handler.wg.Add(1)
 	go func(cLog chan *log.Entry, cStop chan bool) {
 		var e *log.Entry
 		for {
@@ -115,42 +137,65 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 			case e = <-cLog:
 				payload, err := marshalFunc(e)
 				if err != nil {
-					backupLogger.WithError(err).Error("Marshalling log.Entry in AsyncApexLogNSQHander")
-					backupLogger.Handler.HandleLog(e)
+					handler.mu.Lock()
+					backupLogger.WithError(err).Error("cannot marshal log entry")
+					handler.mu.Unlock()
 					continue
 				}
-				err = publishFunc(topic, payload)
+				err = publishOrRetry(
+					time.Second*time.Duration(maximumBackoffMultiple),
+					publishF(payload))
 				if err != nil {
+					handler.mu.Lock()
 					backupLogger.WithError(err).Error("Publishing in AsyncApexLogNSQHander")
-					backupLogger.Handler.HandleLog(e)
+					handler.mu.Unlock()
 					continue
 				}
 			case <-cStop:
-				break
+				handler.wg.Done()
+				return
 			}
 
 		}
+
 	}(logChan, stopChan)
-	return &AsyncApexLogNSQHandler{
-		logChan:  logChan,
-		stopChan: stopChan,
-	}
+	return handler
 }
 
 func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	select {
 	case h.logChan <- e:
-		// Do nothing more
 	default:
 		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
 		backupLogger.Handler.HandleLog(e)
 	}
-	h.mu.Unlock()
+
 	return nil
 }
 
 func (h *AsyncApexLogNSQHandler) Stop() {
 	h.stopChan <- true
+	h.wg.Wait()
+}
+
+func publishOrRetry(maxBackoff time.Duration, fn func() error) error {
+	var err error
+
+	for i := 0; true; i++ {
+		err = fn()
+		if err == nil {
+			break
+		}
+		backoff := time.Duration(math.Exp(float64(i))) * time.Second
+		backupLogger.WithError(err).WithField("backoff", backoff).Info("failed to publish, backing off and retrying")
+		if backoff > maxBackoff {
+			err = fmt.Errorf("giving up after %v retries, too many errors. last error: %s", i, err)
+			break
+		}
+		time.Sleep(backoff)
+	}
+	return err
 }
