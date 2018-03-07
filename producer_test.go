@@ -180,21 +180,14 @@ func TestAsyncApexLogNSQHandlerBacksOff(t *testing.T) {
 	handler := NewAsyncApexLogNSQHandler(json.Marshal, failyPublish, "testing", 5)
 	log.SetHandler(handler)
 	log.WithField("user", "tealeg").Info("Hello")
-	log.WithField("user", "tealeg").Info("Hello")
-	log.WithField("user", "tealeg").Info("Hello")
-	timeout := time.After(time.Second * 5)
+	timeout := time.After(time.Second * 6)
 	<-timeout
 	handler.Stop()
-	handler.mu.Lock()
 	entries := backupHandler.Entries
-	handler.mu.Unlock()
-	if len(entries) != 3 {
-		t.Errorf("Expected 3 backup-log messages, got %d", len(entries))
-	}
 	expected := map[time.Duration]bool{
-		0 * time.Second: false,
 		1 * time.Second: false,
 		2 * time.Second: false,
+		7 * time.Second: false,
 	}
 	for _, entry := range entries {
 		inter, ok := entry.Fields["backoff"]
