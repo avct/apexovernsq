@@ -7,6 +7,8 @@ other side.
 package apexovernsq
 
 import (
+	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -76,7 +78,11 @@ func (h *ApexLogNSQHandler) HandleLog(e *log.Entry) error {
 	if err != nil {
 		return err
 	}
-	return h.publishFunc(h.topic, payload)
+	err = h.publishFunc(h.topic, payload)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // AsyncApexLogNSQHandler is a handler that can be passed to
@@ -127,36 +133,50 @@ func NewAsyncApexLogNSQHandler(marshalFunc MarshalFunc, publishFunc PublishFunc,
 		stopChan: stopChan,
 	}
 
+	publishOrRetry := func(maxBackoff time.Duration, e *log.Entry) error {
+		var err error
+
+		publish := func() error {
+			payload, err := marshalFunc(e)
+			if err != nil {
+				return err
+			}
+			err = publishFunc(topic, payload)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		for i := 0; true; i++ {
+			err = publish()
+			if err == nil {
+				return nil
+			}
+			backoff := time.Duration(math.Exp(float64(i))) * time.Second
+			if backoff > maxBackoff {
+				return fmt.Errorf("giving up after %v retries, too many errors. last error: %s", i, err)
+			}
+			time.Sleep(backoff)
+		}
+		return nil
+
+	}
+
 	go func(cLog chan *log.Entry, cStop chan bool) {
 		var e *log.Entry
 		for {
-			if backoff > 0 {
-				time.Sleep(time.Second * time.Duration(backoff))
-			}
 			select {
 			case e = <-cLog:
-				payload, err := marshalFunc(e)
+				err := publishOrRetry(time.Second*time.Duration(backoff), e)
 				if err != nil {
-					handler.mu.Lock()
-					backupLogger.WithError(err).Error("Marshalling log.Entry in AsyncApexLogNSQHander")
-					backoff = incrementBackoff(backoff)
-					handler.mu.Unlock()
-
-					continue
-				}
-
-				err = publishFunc(topic, payload)
-				if err != nil {
-					handler.mu.Lock()
 					backupLogger.WithField("backoff", time.Second*time.Duration(backoff)).WithError(err).Error("Publishing in AsyncApexLogNSQHander")
 					backoff = incrementBackoff(backoff)
-					handler.mu.Unlock()
-
 					continue
 				}
 				backoff = 0
 			case <-cStop:
-				break
+				return
 			}
 
 		}
