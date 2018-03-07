@@ -173,6 +173,7 @@ func (h *AsyncApexLogNSQHandler) HandleLog(e *log.Entry) error {
 		// Do nothing more
 	default:
 		backupLogger.Error("AsyncApexLogNSQHandler log channel is full")
+		backupLogger.Handler.HandleLog(e)
 	}
 	return nil
 }
